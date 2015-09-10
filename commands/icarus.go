@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/golangchallenge/gc6/mazelib"
 	"github.com/spf13/cobra"
@@ -115,12 +116,206 @@ func ToReply(in []byte) mazelib.Reply {
 	return *res
 }
 
-// TODO: This is where you work your magic
+type Coordinate struct {
+	mazelib.Coordinate
+}
+
+func (c Coordinate) Left() Coordinate {
+	return Coordinate{mazelib.Coordinate{c.X - 1, c.Y}}
+}
+
+func (c Coordinate) Right() Coordinate {
+	return Coordinate{mazelib.Coordinate{c.X + 1, c.Y}}
+}
+
+func (c Coordinate) Up() Coordinate {
+	return Coordinate{mazelib.Coordinate{c.X, c.Y - 1}}
+}
+
+func (c Coordinate) Down() Coordinate {
+	return Coordinate{mazelib.Coordinate{c.X, c.Y + 1}}
+}
+
+func (c Coordinate) Neighbor(dir string) Coordinate {
+	var ret Coordinate
+	switch dir {
+	case "left":
+		ret = c.Left()
+	case "right":
+		ret = c.Right()
+	case "up":
+		ret = c.Up()
+	case "down":
+		ret = c.Down()
+	}
+	return ret
+}
+
+type Survey struct {
+	mazelib.Survey
+}
+
+func (s Survey) HasWall(dir string) bool {
+	var ret bool
+	switch dir {
+	case "left":
+		ret = s.Left
+	case "right":
+		ret = s.Right
+	case "up":
+		ret = s.Top
+	case "down":
+		ret = s.Bottom
+	}
+	return ret
+}
+
+type path struct {
+	coordinates []Coordinate
+	size        int
+}
+
+func newPath() *path {
+	return &path{
+		coordinates: []Coordinate{},
+		size:        0,
+	}
+}
+
+func (p *path) push(coordinate Coordinate) {
+	if p.size >= len(p.coordinates) {
+		p.coordinates = append(p.coordinates, coordinate)
+	} else {
+		p.coordinates[p.size] = coordinate
+	}
+	p.size += 1
+}
+
+func (p *path) top() (Coordinate, error) {
+	if p.size == 0 {
+		return Coordinate{}, fmt.Errorf("There's no top coordinate in the empty path object")
+	}
+	return p.coordinates[p.size-1], nil
+}
+
+func (p *path) backtrack(explored map[Coordinate]Survey) (Coordinate, error) {
+	for i := p.size - 2; i >= 0; i -= 1 {
+		c := p.coordinates[i]
+		if _, _, found := pickNeighbor(c, explored); found {
+			p.size = i + 1 // shrink
+			return c, nil
+		}
+	}
+	return origin(), fmt.Errorf("Couldn't find a coordinate, which is not fully explored, in the path")
+}
+
 func solveMaze() {
-	_ = awake() // Need to start with waking up to initialize a new maze
+	// Need to start with waking up to initialize a new maze
 	// You'll probably want to set this to a named value and start by figuring
 	// out which step to take next
 
-	//TODO: Write your solver algorithm here
+	explored := make(map[Coordinate]Survey)
+	src := origin()
+	explored[src] = Survey{awake()}
 
+	path := newPath()
+	path.push(src)
+
+	for {
+		icarus, _ := path.top()
+		if next, direction, found := pickNeighbor(icarus, explored); found {
+			survey, err := Move(direction)
+			if err == mazelib.ErrVictory {
+				os.Exit(1)
+			}
+			if err != nil {
+				panic(err)
+			}
+			path.push(next)
+			explored[next] = Survey{survey}
+		} else {
+			dst, err := path.backtrack(explored)
+			if err != nil {
+				panic(err)
+			}
+			goback(icarus, dst, explored)
+		}
+	}
+}
+
+func goback(src Coordinate, dst Coordinate, explored map[Coordinate]Survey) int {
+	queue := make([]Coordinate, len(explored))
+	from := make(map[Coordinate]string)
+	queue[0] = dst
+	from[dst] = ""
+	found := false
+	for i, size := 0, 1; i < size && !found; i += 1 {
+		c := queue[i]
+		survey := explored[c]
+		for _, dir := range getDirections() {
+			if survey.HasWall(dir) {
+				continue
+			}
+			nb := src.Neighbor(dir)
+			if _, nbex := explored[nb]; !nbex {
+				continue
+			}
+			if _, searched := from[nb]; searched {
+				continue
+			}
+			queue[size] = nb
+			size += 1
+			from[nb] = reverseDirection(dir)
+			if nb == src {
+				found = true
+				break
+			}
+		}
+	}
+	if !found {
+		panic("goback doesn't even find a way back")
+	}
+	ret := 0
+	for c := src; c != dst; c.Neighbor(from[c]) {
+		ret += 1
+		Move(from[c])
+	}
+	return ret
+}
+
+func reverseDirection(direction string) string {
+	var ret string
+	switch direction {
+	case "up":
+		ret = "down"
+	case "down":
+		ret = "up"
+	case "left":
+		ret = "right"
+	case "right":
+		ret = "left"
+	}
+	return ret
+}
+
+func pickNeighbor(coordinate Coordinate, explored map[Coordinate]Survey) (Coordinate, string, bool) {
+	survey := explored[coordinate]
+	// todo: randomize
+	for _, dir := range getDirections() {
+		if !survey.HasWall(dir) {
+			neighbor := coordinate.Neighbor(dir)
+			if _, ok := explored[neighbor]; !ok {
+				return neighbor, dir, true
+			}
+		}
+	}
+	return coordinate, "", false
+}
+
+func getDirections() []string {
+	return []string{"left", "right", "up", "down"}
+}
+
+func origin() Coordinate {
+	return Coordinate{mazelib.Coordinate{X: 0, Y: 0}}
 }

@@ -16,7 +16,7 @@
 package main
 
 import (
-	"github.com/golangchallenge/gc6/commands"
+	"github.com/showbufire/gc6/commands"
 )
 
 // Using a very bare main file.
