@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 
 	"github.com/golangchallenge/gc6/mazelib"
@@ -205,7 +206,7 @@ func (p *path) backtrack(explored map[Coordinate]Survey) (Coordinate, error) {
 			return c, nil
 		}
 	}
-	return origin(), fmt.Errorf("Couldn't find a coordinate, which is not fully explored, in the path")
+	return Coordinate{}, fmt.Errorf("Couldn't find a coordinate, which is not fully explored, in the path")
 }
 
 func solveMaze() {
@@ -214,7 +215,7 @@ func solveMaze() {
 	// out which step to take next
 
 	explored := make(map[Coordinate]Survey)
-	src := origin()
+	src := Coordinate{mazelib.Coordinate{X: 0, Y: 0}}
 	explored[src] = Survey{awake()}
 
 	path := newPath()
@@ -242,6 +243,7 @@ func solveMaze() {
 	}
 }
 
+// goback from src to dst by breadth-first searching coordinates already explored
 func goback(src Coordinate, dst Coordinate, explored map[Coordinate]Survey) int {
 	queue := make([]Coordinate, len(explored))
 	from := make(map[Coordinate]int)
@@ -312,10 +314,13 @@ func reverseDirection(dir int) int {
 	return ret
 }
 
+// pickNeighbor selects a neighboring unexplored coordinate
 func pickNeighbor(coordinate Coordinate, explored map[Coordinate]Survey) (Coordinate, int, bool) {
 	survey := explored[coordinate]
-	// todo: randomize
-	for _, dir := range getDirections() {
+	dirs := getDirections()
+	idxs := rand.Perm(len(dirs))
+	for _, idx := range idxs {
+		dir := dirs[idx]
 		if !survey.HasWall(dir) {
 			neighbor := coordinate.Neighbor(dir)
 			if _, ok := explored[neighbor]; !ok {
@@ -328,8 +333,4 @@ func pickNeighbor(coordinate Coordinate, explored map[Coordinate]Survey) (Coordi
 
 func getDirections() []int {
 	return []int{mazelib.N, mazelib.S, mazelib.E, mazelib.W}
-}
-
-func origin() Coordinate {
-	return Coordinate{mazelib.Coordinate{X: 0, Y: 0}}
 }
