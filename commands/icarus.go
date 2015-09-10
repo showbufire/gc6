@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 
 	"github.com/golangchallenge/gc6/mazelib"
 	"github.com/spf13/cobra"
@@ -136,17 +135,17 @@ func (c Coordinate) Down() Coordinate {
 	return Coordinate{mazelib.Coordinate{c.X, c.Y + 1}}
 }
 
-func (c Coordinate) Neighbor(dir string) Coordinate {
+func (c Coordinate) Neighbor(dir int) Coordinate {
 	var ret Coordinate
 	switch dir {
-	case "left":
-		ret = c.Left()
-	case "right":
-		ret = c.Right()
-	case "up":
+	case mazelib.N:
 		ret = c.Up()
-	case "down":
+	case mazelib.S:
 		ret = c.Down()
+	case mazelib.W:
+		ret = c.Left()
+	case mazelib.E:
+		ret = c.Right()
 	}
 	return ret
 }
@@ -155,17 +154,17 @@ type Survey struct {
 	mazelib.Survey
 }
 
-func (s Survey) HasWall(dir string) bool {
+func (s Survey) HasWall(dir int) bool {
 	var ret bool
 	switch dir {
-	case "left":
-		ret = s.Left
-	case "right":
-		ret = s.Right
-	case "up":
+	case mazelib.N:
 		ret = s.Top
-	case "down":
+	case mazelib.S:
 		ret = s.Bottom
+	case mazelib.W:
+		ret = s.Left
+	case mazelib.E:
+		ret = s.Right
 	}
 	return ret
 }
@@ -223,10 +222,10 @@ func solveMaze() {
 
 	for {
 		icarus, _ := path.top()
-		if next, direction, found := pickNeighbor(icarus, explored); found {
-			survey, err := Move(direction)
+		if next, dir, found := pickNeighbor(icarus, explored); found {
+			survey, err := Move(d2s(dir))
 			if err == mazelib.ErrVictory {
-				os.Exit(0)
+				return
 			}
 			if err != nil {
 				panic(err)
@@ -245,9 +244,9 @@ func solveMaze() {
 
 func goback(src Coordinate, dst Coordinate, explored map[Coordinate]Survey) int {
 	queue := make([]Coordinate, len(explored))
-	from := make(map[Coordinate]string)
+	from := make(map[Coordinate]int)
 	queue[0] = dst
-	from[dst] = ""
+	from[dst] = 0
 	found := false
 	for i, size := 0, 1; i < size && !found; i += 1 {
 		c := queue[i]
@@ -278,27 +277,42 @@ func goback(src Coordinate, dst Coordinate, explored map[Coordinate]Survey) int 
 	ret := 0
 	for c := src; c != dst; c.Neighbor(from[c]) {
 		ret += 1
-		Move(from[c])
+		Move(d2s(from[c]))
 	}
 	return ret
 }
 
-func reverseDirection(direction string) string {
+func d2s(dir int) string {
 	var ret string
-	switch direction {
-	case "up":
-		ret = "down"
-	case "down":
+	switch dir {
+	case mazelib.N:
 		ret = "up"
-	case "left":
-		ret = "right"
-	case "right":
+	case mazelib.S:
+		ret = "down"
+	case mazelib.W:
 		ret = "left"
+	case mazelib.E:
+		ret = "right"
 	}
 	return ret
 }
 
-func pickNeighbor(coordinate Coordinate, explored map[Coordinate]Survey) (Coordinate, string, bool) {
+func reverseDirection(dir int) int {
+	var ret int
+	switch dir {
+	case mazelib.N:
+		ret = mazelib.S
+	case mazelib.S:
+		ret = mazelib.N
+	case mazelib.W:
+		ret = mazelib.E
+	case mazelib.E:
+		ret = mazelib.W
+	}
+	return ret
+}
+
+func pickNeighbor(coordinate Coordinate, explored map[Coordinate]Survey) (Coordinate, int, bool) {
 	survey := explored[coordinate]
 	// todo: randomize
 	for _, dir := range getDirections() {
@@ -309,11 +323,11 @@ func pickNeighbor(coordinate Coordinate, explored map[Coordinate]Survey) (Coordi
 			}
 		}
 	}
-	return coordinate, "", false
+	return coordinate, 0, false
 }
 
-func getDirections() []string {
-	return []string{"left", "right", "up", "down"}
+func getDirections() []int {
+	return []int{mazelib.N, mazelib.S, mazelib.E, mazelib.W}
 }
 
 func origin() Coordinate {
