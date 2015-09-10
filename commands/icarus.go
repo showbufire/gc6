@@ -45,6 +45,22 @@ var icarusCmd = &cobra.Command{
 	},
 }
 
+var (
+	allDirections = []int{mazelib.N, mazelib.S, mazelib.E, mazelib.W}
+	d2s           = map[int]string{
+		mazelib.N: "up",
+		mazelib.S: "down",
+		mazelib.E: "right",
+		mazelib.W: "left",
+	}
+	reverseDirection = map[int]int{
+		mazelib.N: mazelib.S,
+		mazelib.S: mazelib.N,
+		mazelib.E: mazelib.W,
+		mazelib.W: mazelib.E,
+	}
+)
+
 func init() {
 	RootCmd.AddCommand(icarusCmd)
 }
@@ -224,7 +240,7 @@ func solveMaze() {
 	for {
 		icarus, _ := path.top()
 		if next, dir, found := pickNeighbor(icarus, explored); found {
-			survey, err := Move(d2s(dir))
+			survey, err := Move(d2s[dir])
 			if err == mazelib.ErrVictory {
 				return
 			}
@@ -253,7 +269,7 @@ func goback(src Coordinate, dst Coordinate, explored map[Coordinate]Survey) int 
 	for i, size := 0, 1; i < size && !found; i += 1 {
 		c := queue[i]
 		survey := explored[c]
-		for _, dir := range getDirections() {
+		for _, dir := range allDirections {
 			if survey.HasWall(dir) {
 				continue
 			}
@@ -266,7 +282,7 @@ func goback(src Coordinate, dst Coordinate, explored map[Coordinate]Survey) int 
 			}
 			queue[size] = nb
 			size += 1
-			from[nb] = reverseDirection(dir)
+			from[nb] = reverseDirection[dir]
 			if nb == src {
 				found = true
 				break
@@ -279,37 +295,7 @@ func goback(src Coordinate, dst Coordinate, explored map[Coordinate]Survey) int 
 	ret := 0
 	for c := src; c != dst; c = c.Neighbor(from[c]) {
 		ret += 1
-		Move(d2s(from[c]))
-	}
-	return ret
-}
-
-func d2s(dir int) string {
-	var ret string
-	switch dir {
-	case mazelib.N:
-		ret = "up"
-	case mazelib.S:
-		ret = "down"
-	case mazelib.W:
-		ret = "left"
-	case mazelib.E:
-		ret = "right"
-	}
-	return ret
-}
-
-func reverseDirection(dir int) int {
-	var ret int
-	switch dir {
-	case mazelib.N:
-		ret = mazelib.S
-	case mazelib.S:
-		ret = mazelib.N
-	case mazelib.W:
-		ret = mazelib.E
-	case mazelib.E:
-		ret = mazelib.W
+		Move(d2s[from[c]])
 	}
 	return ret
 }
@@ -317,10 +303,9 @@ func reverseDirection(dir int) int {
 // pickNeighbor selects a neighboring unexplored coordinate
 func pickNeighbor(coordinate Coordinate, explored map[Coordinate]Survey) (Coordinate, int, bool) {
 	survey := explored[coordinate]
-	dirs := getDirections()
-	idxs := rand.Perm(len(dirs))
+	idxs := rand.Perm(len(allDirections))
 	for _, idx := range idxs {
-		dir := dirs[idx]
+		dir := allDirections[idx]
 		if !survey.HasWall(dir) {
 			neighbor := coordinate.Neighbor(dir)
 			if _, ok := explored[neighbor]; !ok {
@@ -329,8 +314,4 @@ func pickNeighbor(coordinate Coordinate, explored map[Coordinate]Survey) (Coordi
 		}
 	}
 	return coordinate, 0, false
-}
-
-func getDirections() []int {
-	return []int{mazelib.N, mazelib.S, mazelib.E, mazelib.W}
 }
