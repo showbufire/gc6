@@ -356,7 +356,21 @@ func fullMaze() *Maze {
 	return z
 }
 
-// TODO: Write your maze creator function here
+func (z *Maze) addBoundary() {
+	for x := 0; x < z.Width(); x += 1 {
+		room, _ := z.GetRoom(x, 0)
+		room.AddWall(mazelib.N)
+		room, _ = z.GetRoom(x, z.Height()-1)
+		room.AddWall(mazelib.S)
+	}
+	for y := 0; y < z.Height(); y += 1 {
+		room, _ := z.GetRoom(0, y)
+		room.AddWall(mazelib.W)
+		room, _ = z.GetRoom(z.Width()-1, y)
+		room.AddWall(mazelib.E)
+	}
+}
+
 func createMaze() *Maze {
 
 	// TODO: Fill in the maze:
@@ -365,5 +379,10 @@ func createMaze() *Maze {
 	// You need to Add and Remove walls as needed.
 	// Use the mazelib.AddWall & mazelib.RmWall to do this
 
-	return emptyMaze()
+	z := emptyMaze()
+	z.SetStartPoint(rand.Intn(z.Width()), rand.Intn(z.Height()))
+	z.SetTreasure(rand.Intn(z.Width()), rand.Intn(z.Height()))
+	z.addBoundary()
+
+	return z
 }
