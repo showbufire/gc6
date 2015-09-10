@@ -186,6 +186,7 @@ func (s Survey) HasWall(dir int) bool {
 	return ret
 }
 
+// path is a stack, but instead of poping one by one, it backtracks many
 type path struct {
 	coordinates []Coordinate
 	size        int
@@ -214,6 +215,8 @@ func (p *path) top() (Coordinate, error) {
 	return p.coordinates[p.size-1], nil
 }
 
+// backtrack finds something other than the top one that has an explored neighbor
+// warning: it has a side effect on the size
 func (p *path) backtrack(explored map[Coordinate]Survey) (Coordinate, error) {
 	for i := p.size - 2; i >= 0; i -= 1 {
 		c := p.coordinates[i]
