@@ -88,7 +88,7 @@ func Move(direction string) (mazelib.Survey, error) {
 			// os.Exit(1)
 			return rep.Survey, mazelib.ErrVictory
 		} else {
-			return rep.Survey, errors.New(rep.Message)
+			return rep.Survey, nil
 		}
 	}
 
@@ -226,7 +226,7 @@ func solveMaze() {
 		if next, direction, found := pickNeighbor(icarus, explored); found {
 			survey, err := Move(direction)
 			if err == mazelib.ErrVictory {
-				os.Exit(1)
+				os.Exit(0)
 			}
 			if err != nil {
 				panic(err)
@@ -256,7 +256,7 @@ func goback(src Coordinate, dst Coordinate, explored map[Coordinate]Survey) int 
 			if survey.HasWall(dir) {
 				continue
 			}
-			nb := src.Neighbor(dir)
+			nb := c.Neighbor(dir)
 			if _, nbex := explored[nb]; !nbex {
 				continue
 			}
