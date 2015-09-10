@@ -52,7 +52,7 @@ func RunIcarus() {
 	// Run the solver as many times as the user desires.
 	fmt.Println("Solving", viper.GetInt("times"), "times")
 	for x := 0; x < viper.GetInt("times"); x++ {
-
+		fmt.Printf("Solving %v time\n", x)
 		solveMaze()
 	}
 
@@ -275,7 +275,7 @@ func goback(src Coordinate, dst Coordinate, explored map[Coordinate]Survey) int 
 		panic("goback doesn't even find a way back")
 	}
 	ret := 0
-	for c := src; c != dst; c.Neighbor(from[c]) {
+	for c := src; c != dst; c = c.Neighbor(from[c]) {
 		ret += 1
 		Move(d2s(from[c]))
 	}

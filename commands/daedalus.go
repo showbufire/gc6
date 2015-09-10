@@ -380,8 +380,14 @@ func createMaze() *Maze {
 	// Use the mazelib.AddWall & mazelib.RmWall to do this
 
 	z := emptyMaze()
-	z.SetStartPoint(rand.Intn(z.Width()), rand.Intn(z.Height()))
-	z.SetTreasure(rand.Intn(z.Width()), rand.Intn(z.Height()))
+	sx, sy := rand.Intn(z.Width()), rand.Intn(z.Height())
+	dx, dy := rand.Intn(z.Width()), rand.Intn(z.Height())
+	if sx == dx && sy == dy {
+		dy = (dy + 1) % z.Height()
+	}
+	fmt.Printf("Starting (%v, %v), Destination (%v, %v)\n", sx, sy, dx, dy)
+	z.SetStartPoint(sx, sy)
+	z.SetTreasure(dx, dy)
 	z.addBoundary()
 
 	return z
