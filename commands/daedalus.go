@@ -373,19 +373,12 @@ func (z *Maze) addBoundary() {
 
 func createMaze() *Maze {
 
-	// TODO: Fill in the maze:
-	// You need to insert a startingPoint for Icarus
-	// You need to insert an EndingPoint (treasure) for Icarus
-	// You need to Add and Remove walls as needed.
-	// Use the mazelib.AddWall & mazelib.RmWall to do this
-
 	z := emptyMaze()
 	sx, sy := rand.Intn(z.Width()), rand.Intn(z.Height())
 	dx, dy := rand.Intn(z.Width()), rand.Intn(z.Height())
-	if sx == dx && sy == dy {
-		dy = (dy + 1) % z.Height()
+	for dx == sx && dy == sy {
+		dx, dy = rand.Intn(z.Width()), rand.Intn(z.Height())
 	}
-	fmt.Printf("Starting (%v, %v), Destination (%v, %v)\n", sx, sy, dx, dy)
 	z.SetStartPoint(sx, sy)
 	z.SetTreasure(dx, dy)
 	z.addBoundary()
