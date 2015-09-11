@@ -518,6 +518,14 @@ func (m *Maze) paveRoute(route []common.Coordinate) {
 }
 
 func (m *Maze) floodfill(c, from common.Coordinate, explored map[common.Coordinate]bool) {
+	m.sealRoom(c)
+	m.removeWallBetween(c, from)
+	explored[c] = true
+	for _, nb := range c.Neighbors() {
+		if m.contains(nb) && !explored[nb] {
+			m.floodfill(nb, c, explored)
+		}
+	}
 }
 
 func (m *Maze) buildMaze(src, dst common.Coordinate) {
@@ -534,10 +542,9 @@ func (m *Maze) buildMaze(src, dst common.Coordinate) {
 	for _, idx := range order {
 		c := route[idx]
 		for _, nb := range c.Neighbors() {
-			if nb.X < 0 || nb.X >= m.Width() || nb.Y < 0 || nb.Y >= m.Height() || explored[nb] {
-				continue
+			if m.contains(nb) && !explored[nb] {
+				m.floodfill(nb, c, explored)
 			}
-			m.floodfill(nb, c, explored)
 		}
 	}
 }
