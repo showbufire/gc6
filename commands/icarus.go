@@ -24,6 +24,7 @@ import (
 	"net/http"
 
 	"github.com/golangchallenge/gc6/mazelib"
+	"github.com/showbufire/gc6/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -132,41 +133,6 @@ func ToReply(in []byte) mazelib.Reply {
 	return *res
 }
 
-type Coordinate struct {
-	mazelib.Coordinate
-}
-
-func (c Coordinate) Left() Coordinate {
-	return Coordinate{mazelib.Coordinate{c.X - 1, c.Y}}
-}
-
-func (c Coordinate) Right() Coordinate {
-	return Coordinate{mazelib.Coordinate{c.X + 1, c.Y}}
-}
-
-func (c Coordinate) Up() Coordinate {
-	return Coordinate{mazelib.Coordinate{c.X, c.Y - 1}}
-}
-
-func (c Coordinate) Down() Coordinate {
-	return Coordinate{mazelib.Coordinate{c.X, c.Y + 1}}
-}
-
-func (c Coordinate) Neighbor(dir int) Coordinate {
-	var ret Coordinate
-	switch dir {
-	case mazelib.N:
-		ret = c.Up()
-	case mazelib.S:
-		ret = c.Down()
-	case mazelib.W:
-		ret = c.Left()
-	case mazelib.E:
-		ret = c.Right()
-	}
-	return ret
-}
-
 type Survey struct {
 	mazelib.Survey
 }
@@ -188,18 +154,18 @@ func (s Survey) HasWall(dir int) bool {
 
 // path is a stack, but instead of poping one by one, it backtracks many
 type path struct {
-	coordinates []Coordinate
+	coordinates []common.Coordinate
 	size        int
 }
 
 func newPath() *path {
 	return &path{
-		coordinates: []Coordinate{},
+		coordinates: []common.Coordinate{},
 		size:        0,
 	}
 }
 
-func (p *path) push(coordinate Coordinate) {
+func (p *path) push(coordinate common.Coordinate) {
 	if p.size >= len(p.coordinates) {
 		p.coordinates = append(p.coordinates, coordinate)
 	} else {
@@ -208,16 +174,16 @@ func (p *path) push(coordinate Coordinate) {
 	p.size += 1
 }
 
-func (p *path) top() (Coordinate, error) {
+func (p *path) top() (common.Coordinate, error) {
 	if p.size == 0 {
-		return Coordinate{}, fmt.Errorf("There's no top coordinate in the empty path object")
+		return common.Coordinate{}, fmt.Errorf("There's no top coordinate in the empty path object")
 	}
 	return p.coordinates[p.size-1], nil
 }
 
 // backtrack finds something other than the top one that has an explored neighbor
 // warning: it has a side effect on the size
-func (p *path) backtrack(explored map[Coordinate]Survey) (Coordinate, error) {
+func (p *path) backtrack(explored map[common.Coordinate]Survey) (common.Coordinate, error) {
 	for i := p.size - 2; i >= 0; i -= 1 {
 		c := p.coordinates[i]
 		if _, _, found := pickNeighbor(c, explored); found {
@@ -225,7 +191,7 @@ func (p *path) backtrack(explored map[Coordinate]Survey) (Coordinate, error) {
 			return c, nil
 		}
 	}
-	return Coordinate{}, fmt.Errorf("Couldn't find a coordinate, which is not fully explored, in the path")
+	return common.Coordinate{}, fmt.Errorf("Couldn't find a coordinate, which is not fully explored, in the path")
 }
 
 func solveMaze() {
@@ -233,8 +199,8 @@ func solveMaze() {
 	// You'll probably want to set this to a named value and start by figuring
 	// out which step to take next
 
-	explored := make(map[Coordinate]Survey)
-	src := Coordinate{mazelib.Coordinate{X: 0, Y: 0}}
+	explored := make(map[common.Coordinate]Survey)
+	src := common.NewCoordinate(0, 0)
 	explored[src] = Survey{awake()}
 
 	path := newPath()
@@ -263,9 +229,9 @@ func solveMaze() {
 }
 
 // goback from src to dst by breadth-first searching coordinates already explored
-func goback(src Coordinate, dst Coordinate, explored map[Coordinate]Survey) int {
-	queue := make([]Coordinate, len(explored))
-	from := make(map[Coordinate]int)
+func goback(src common.Coordinate, dst common.Coordinate, explored map[common.Coordinate]Survey) int {
+	queue := make([]common.Coordinate, len(explored))
+	from := make(map[common.Coordinate]int)
 	queue[0] = dst
 	from[dst] = 0
 	found := false
@@ -304,7 +270,7 @@ func goback(src Coordinate, dst Coordinate, explored map[Coordinate]Survey) int 
 }
 
 // pickNeighbor selects a neighboring unexplored coordinate
-func pickNeighbor(coordinate Coordinate, explored map[Coordinate]Survey) (Coordinate, int, bool) {
+func pickNeighbor(coordinate common.Coordinate, explored map[common.Coordinate]Survey) (common.Coordinate, int, bool) {
 	survey := explored[coordinate]
 	idxs := rand.Perm(len(allDirections))
 	for _, idx := range idxs {
