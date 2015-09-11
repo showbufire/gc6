@@ -422,6 +422,9 @@ func (r rect) cuth(src, dst common.Coordinate) (rect, common.Coordinate, rect, c
 	}
 	cy := (src.Y+dst.Y)/2 + 1
 	cx := rand.Intn(r.W) + r.X
+	if cx == src.X || cx == dst.X {
+		cx = rand.Intn(r.W) + r.X
+	}
 	r1 := rect{X: r.X, Y: r.Y, W: r.W, H: cy - r.Y}
 	r2 := rect{X: r.X, Y: cy, W: r.W, H: r.H - r1.H}
 	if r1.contains(src) {
@@ -436,6 +439,9 @@ func (r rect) cutv(src, dst common.Coordinate) (rect, common.Coordinate, rect, c
 	}
 	cx := (src.X+dst.X)/2 + 1
 	cy := rand.Intn(r.H) + r.Y
+	if cy == src.Y || cy == dst.Y {
+		cy = rand.Intn(r.H) + r.Y
+	}
 	r1 := rect{X: r.X, Y: r.Y, W: cx - r.X, H: r.H}
 	r2 := rect{X: cx, Y: r.Y, W: r.W - r1.W, H: r.H}
 	if r1.contains(src) {
