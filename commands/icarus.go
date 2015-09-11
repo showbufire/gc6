@@ -54,12 +54,6 @@ var (
 		mazelib.E: "right",
 		mazelib.W: "left",
 	}
-	reverseDirection = map[int]int{
-		mazelib.N: mazelib.S,
-		mazelib.S: mazelib.N,
-		mazelib.E: mazelib.W,
-		mazelib.W: mazelib.E,
-	}
 )
 
 func init() {
@@ -251,7 +245,7 @@ func goback(src common.Coordinate, dst common.Coordinate, explored map[common.Co
 			}
 			queue[size] = nb
 			size += 1
-			from[nb] = reverseDirection[dir]
+			from[nb] = common.ReverseDirection[dir]
 			if nb == src {
 				found = true
 				break

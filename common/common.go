@@ -2,6 +2,15 @@ package common
 
 import "github.com/golangchallenge/gc6/mazelib"
 
+var (
+	ReverseDirection = map[int]int{
+		mazelib.N: mazelib.S,
+		mazelib.S: mazelib.N,
+		mazelib.E: mazelib.W,
+		mazelib.W: mazelib.E,
+	}
+)
+
 type Coordinate struct {
 	mazelib.Coordinate
 }
@@ -43,4 +52,18 @@ func (c Coordinate) Neighbor(dir int) Coordinate {
 
 func (c Coordinate) Neighbors() []Coordinate {
 	return []Coordinate{c.Up(), c.Down(), c.Left(), c.Right()}
+}
+
+func (c Coordinate) GetDir(cc Coordinate) int {
+	if c.X == cc.X {
+		if c.Y < cc.Y {
+			return mazelib.S
+		} else {
+			return mazelib.N
+		}
+	}
+	if c.X < cc.X {
+		return mazelib.E
+	}
+	return mazelib.W
 }

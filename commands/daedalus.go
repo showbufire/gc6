@@ -401,10 +401,7 @@ func findNaiveRoute(src, dst common.Coordinate) []common.Coordinate {
 			}
 		}
 	}
-	if src != dst {
-		ret = append(ret, dst)
-	}
-	return ret
+	return append(ret, dst)
 }
 
 type rect struct {
@@ -472,7 +469,46 @@ func (r rect) findRoute(src, dst common.Coordinate) []common.Coordinate {
 	return append(rsrc.findRoute(src, csrc), rdst.findRoute(cdst, dst)...)
 }
 
-func (m *Maze) paveRoute([]common.Coordinate) {
+func (m *Maze) contains(c common.Coordinate) bool {
+	return 0 <= c.X && c.X < m.Width() && 0 <= c.Y && c.Y < m.Height()
+}
+
+func (m *Maze) addWall(c common.Coordinate, dir int) {
+	nb := c.Neighbor(dir)
+	if m.contains(nb) {
+		r, _ := m.GetRoom(c.X, c.Y)
+		r.AddWall(dir)
+		r, _ = m.GetRoom(nb.X, nb.Y)
+		r.AddWall(common.ReverseDirection[dir])
+	}
+}
+
+func (m *Maze) sealRoom(c common.Coordinate) {
+	m.addWall(c, mazelib.N)
+	m.addWall(c, mazelib.S)
+	m.addWall(c, mazelib.E)
+	m.addWall(c, mazelib.W)
+}
+
+func (m *Maze) removeWallBetween(c1, c2 common.Coordinate) {
+	d1 := c1.GetDir(c2)
+	r1, _ := m.GetRoom(c1.X, c1.Y)
+	r1.RmWall(d1)
+
+	d2 := c2.GetDir(c1)
+	r2, _ := m.GetRoom(c2.X, c2.Y)
+	r2.RmWall(d2)
+}
+
+func (m *Maze) paveRoute(route []common.Coordinate) {
+	for _, c := range route {
+		m.sealRoom(c)
+	}
+	for i := range route {
+		if i > 0 {
+			m.removeWallBetween(route[i], route[i-1])
+		}
+	}
 }
 
 func (m *Maze) floodfill(c, from common.Coordinate, explored map[common.Coordinate]bool) {
