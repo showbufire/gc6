@@ -25,8 +25,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/showbufire/gc6/mazelib"
 	"github.com/showbufire/gc6/common"
+	"github.com/showbufire/gc6/mazelib"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -521,7 +521,11 @@ func (m *Maze) floodfill(c, from common.Coordinate, explored map[common.Coordina
 	m.sealRoom(c)
 	m.removeWallBetween(c, from)
 	explored[c] = true
-	for _, nb := range c.Neighbors() {
+
+	nbs := c.Neighbors()
+	idxs := rand.Perm(len(nbs))
+	for _, idx := range idxs {
+		nb := nbs[idx]
 		if m.contains(nb) && !explored[nb] {
 			m.floodfill(nb, c, explored)
 		}
