@@ -361,6 +361,7 @@ func fullMaze() *Maze {
 	return z
 }
 
+// addBoundary adds the outer boundary
 func (m *Maze) addBoundary() {
 	for x := 0; x < m.Width(); x += 1 {
 		room, _ := m.GetRoom(x, 0)
@@ -376,6 +377,7 @@ func (m *Maze) addBoundary() {
 	}
 }
 
+// findNaiveRoute finds out a naive route. At each step, it chooses a coordinate closer to the destination.
 func findNaiveRoute(src, dst common.Coordinate) []common.Coordinate {
 	ret := []common.Coordinate{}
 	for c := src; c != dst; {
@@ -404,6 +406,7 @@ func findNaiveRoute(src, dst common.Coordinate) []common.Coordinate {
 	return append(ret, dst)
 }
 
+// rect is a rectangle
 type rect struct {
 	X, Y, W, H int
 }
@@ -416,6 +419,7 @@ func (m *Maze) toRect() rect {
 	return rect{X: 0, Y: 0, W: m.Width(), H: m.Height()}
 }
 
+// cuth tries to cut the rect horizontally
 func (r rect) cuth(src, dst common.Coordinate) (rect, common.Coordinate, rect, common.Coordinate, bool) {
 	if src.Y == dst.Y || r.H <= cutLimit {
 		return rect{}, common.Coordinate{}, rect{}, common.Coordinate{}, false
@@ -433,6 +437,7 @@ func (r rect) cuth(src, dst common.Coordinate) (rect, common.Coordinate, rect, c
 	return r2, common.NewCoordinate(cx, cy), r1, common.NewCoordinate(cx, cy-1), true
 }
 
+// cutv tries to cut the rect vertically
 func (r rect) cutv(src, dst common.Coordinate) (rect, common.Coordinate, rect, common.Coordinate, bool) {
 	if src.X == dst.X || r.W <= cutLimit {
 		return rect{}, common.Coordinate{}, rect{}, common.Coordinate{}, false
@@ -450,7 +455,8 @@ func (r rect) cutv(src, dst common.Coordinate) (rect, common.Coordinate, rect, c
 	return r2, common.NewCoordinate(cx, cy), r1, common.NewCoordinate(cx-1, cy), true
 }
 
-// cut the submaze into two pieces, so src and dst are in different piece, if possible
+// cut the rect into two pieces, so src and dst are in different piece, if possible
+// it returns two rects and two neighbouring coordinates, which is the bridge between the two rects.
 func (r rect) cut(src, dst common.Coordinate) (rect, common.Coordinate, rect, common.Coordinate, bool) {
 	hrsrc, hcsrc, hrdst, hcdst, hok := r.cuth(src, dst)
 	vrsrc, vcsrc, vrdst, vcdst, vok := r.cutv(src, dst)
@@ -466,7 +472,7 @@ func (r rect) cut(src, dst common.Coordinate) (rect, common.Coordinate, rect, co
 	return hrsrc, hcsrc, hrdst, hcdst, hok
 }
 
-// findRoute find a route in the sub-maze recursively
+// findRoute finds a route from source to destination in the sub-maze recursively.
 func (r rect) findRoute(src, dst common.Coordinate) []common.Coordinate {
 	rsrc, csrc, rdst, cdst, ok := r.cut(src, dst)
 	if !ok {
@@ -479,6 +485,7 @@ func (m *Maze) contains(c common.Coordinate) bool {
 	return 0 <= c.X && c.X < m.Width() && 0 <= c.Y && c.Y < m.Height()
 }
 
+// addWall on both sides
 func (m *Maze) addWall(c common.Coordinate, dir int) {
 	nb := c.Neighbor(dir)
 	if m.contains(nb) {
@@ -489,6 +496,7 @@ func (m *Maze) addWall(c common.Coordinate, dir int) {
 	}
 }
 
+// sealRoom surrounds the room with four walls
 func (m *Maze) sealRoom(c common.Coordinate) {
 	m.addWall(c, mazelib.N)
 	m.addWall(c, mazelib.S)
@@ -496,6 +504,7 @@ func (m *Maze) sealRoom(c common.Coordinate) {
 	m.addWall(c, mazelib.W)
 }
 
+// removeWallBetween removes the wall between two neighboring coordinates
 func (m *Maze) removeWallBetween(c1, c2 common.Coordinate) {
 	d1 := c1.GetDir(c2)
 	r1, _ := m.GetRoom(c1.X, c1.Y)
@@ -506,6 +515,8 @@ func (m *Maze) removeWallBetween(c1, c2 common.Coordinate) {
 	r2.RmWall(d2)
 }
 
+// paveRoute given a list of coordinates on a path from source to destination, adds walls so that
+// the route is surrounded with walls, but the route itself is connected
 func (m *Maze) paveRoute(route []common.Coordinate) {
 	for _, c := range route {
 		m.sealRoom(c)
@@ -517,6 +528,8 @@ func (m *Maze) paveRoute(route []common.Coordinate) {
 	}
 }
 
+// floodfill starts from some coordinate, and randomly moves(floodfills) neighboring coordinates if unexplored.
+// This is used to create deadends.
 func (m *Maze) floodfill(c, from common.Coordinate, explored map[common.Coordinate]bool) {
 	m.sealRoom(c)
 	m.removeWallBetween(c, from)
@@ -532,6 +545,9 @@ func (m *Maze) floodfill(c, from common.Coordinate, explored map[common.Coordina
 	}
 }
 
+// buildMaze is the core algorithm.
+// It first recursively generates a route from source to destination.
+// Then it tries to create deadends from rooms in the route.
 func (m *Maze) buildMaze(src, dst common.Coordinate) {
 	r := m.toRect()
 	route := r.findRoute(src, dst)
