@@ -1,6 +1,6 @@
 package common
 
-import "github.com/golangchallenge/gc6/mazelib"
+import "github.com/showbufire/gc6/mazelib"
 
 var (
 	ReverseDirection = map[int]int{

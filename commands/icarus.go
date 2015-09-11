@@ -23,7 +23,7 @@ import (
 	"math/rand"
 	"net/http"
 
-	"github.com/golangchallenge/gc6/mazelib"
+	"github.com/showbufire/gc6/mazelib"
 	"github.com/showbufire/gc6/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
